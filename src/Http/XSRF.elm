@@ -16,75 +16,23 @@ You can find a complete example of an elm app and a servant-auth backend using X
 # Setup
 
 In order to get the cookies that the server has set, you need to ask javascript for it. The simplest way is to get hold
-off all cookies with the `document.cookie` property.
-
-You can use a flag for passing cookies at page initialization:
+off the document object and pass it through a flag to Elm as a JSON Value.
 
     // you would normally put this in a <script> tag inside your app's
     // index.html file
     let app = Elm.App.init(
         { node: document.getElementById("myapp")
-        // Pass all cookies to elm at initialization.
-        // Useful even if you are listening to cookie changes as you'll have the right
-        // value in elm even if the page reloads.
-        , flags: document.cookie
+        // Pass the document object as a flag
+        , flags: document
         }
     );
 
-This however will not work when the server sets the XSRF cookie after the page has loaded, when responding to
-a login request for example. Unfortunately as of now (December 2020) there is no standard way to listen on cookie changes.
-You'll have to make the listener yourself:
+In Elm , you'll need to retrieve the document JSON Value sent by javascript.
 
-    // Inside the same <script> tag as the previous app declaration
-    // An onChange listener for cookies
-    function onCookieChange(callback, interval = 1000) {
-        let prevCookie = document.cookie;
-        setInterval(()=> {
-            let cookie = document.cookie;
-            if (cookie !== prevCookie) {
-                callback(cookie);
-            }
-        }, interval);
-    }
+    import Json.Decode as D
 
-You can send the changed cookies to Elm using a port
-
-        // Still inside the <script> tag, after the declaration of app
-        // Send changed cookies to elm
-        onCookieChange( cookie => app.ports.toElm.send(cookie));
-
-The finished javascript part would look like this:
-
-    <script>
-        // An onChange listener for cookies
-        function onCookieChange(callback, interval = 1000) {
-            let prevCookie = document.cookie;
-            setInterval(()=> {
-                let cookie = document.cookie;
-                if (cookie !== prevCookie) {
-                    callback(cookie);
-                }
-            }, interval);
-        }
-
-        let app = Elm.App.init(
-            { node: document.getElementById("myapp")
-            // Pass all cookies to elm at initialization.
-            // Useful even if you are listening to cookie changes as you'll have the right
-            // value in elm even in page reloads.
-            , flags: document.cookie
-            }
-        );
-
-        // Send changed cookies to elm
-        onCookieChange( cookie => app.ports.toElm.send(cookie));
-    </script>
-
-In Elm land, you'll need to retrieve the cookies sent by javascript. You should handle flags and
-ports as per elm's [documentation](https://guide.elm-lang.org/interop/).
-
-    -- main parametrised to String to recieve the initial cookies
-    main : Program String Model Msg
+    -- main parametrised to D.Value to recieve the document object
+    main : Program D.Value Model Msg
     main =
         Browser.element
             { init = init
@@ -93,35 +41,18 @@ ports as per elm's [documentation](https://guide.elm-lang.org/interop/).
             , subscriptions = subscriptions
             }
 
-    -- Initialize the elm runtime with the cookies loaded
-    init : String -> ( Model, Cmd Msg )
-    init cookies =
-        -- initModel sets a value of Model containing the cookies String
-        ( initModel cookies
+    -- Initialize the elm runtime with the document object
+    init : D.Value -> ( Model, Cmd Msg )
+    init document =
+        ( initModel document
         , initCmd
         )
 
-    -- Listen for the cookies listener message
-    port toElm : (String -> msg) -> Sub msg
+    type alias Model =
+        { document : D.Value }
 
-    -- Subscribe to cookie changes
-    subscriptions : Model -> Sub Msg
-    subscriptions model =
-        -- fire up CookieUpdate when you receive a mesage from javascript
-        toElm CookieUpdate
-
-    -- Update the model cookies value
-    update : Msg -> Model -> ( Model, Cmd Msg )
-    update msg model =
-        case msg of
-            -- There will be other
-            -- (most probably a lot of them)
-            -- messages here
-            CookieUpdate str ->
-                ( { model | cookies = str }
-                , Cmd.none
-                )
-
+    initModel : D.Value -> Model
+    initModel document = Model document
 
 # Requests
 
@@ -148,8 +79,8 @@ In case you don't want to provide any other header except the XSRF one, you can 
 in the headers argument
 
     -- saves a blog post
-    putPost : String -> String -> Cmd msg
-    putPost cookies post =
+    putPost : D.Value -> String -> Cmd msg
+    putPost document post =
         XSRF.request
             { method = "PUT"
             , headers = []
@@ -157,7 +88,7 @@ in the headers argument
             , body = Http.jsonBody <| E.string post
             , expect = Http.expectWhatever
             , xsrfHeaderName = "XSRF-CUSTOM"
-            , xserfToken = XSRF.token "XSRF-COOKIE=" cookies
+            , xserfToken = XSRF.token "XSRF-COOKIE=" document
             , timeout = Nothing
             , tracker = Nothing
             }
@@ -199,7 +130,7 @@ you also need to provide a XSRF header name and token.
             { url = "http://localhost:4000/email"
             , expect = Http.expectJson ReceivedEmail D.string
             , xsrfHeaderName = "X-XSRF-TOKEN"
-            , xsrfToken = XSRF.token "XSRF-TOKEN=" model.cookies
+            , xsrfToken = XSRF.token "XSRF-TOKEN=" model.document
             }
 
 -}
@@ -254,17 +185,17 @@ header headerName cookie =
     Http.header headerName <| Maybe.withDefault "" cookie
 
 
-{-| Get an XSRF token from a string containing various cookies.
+{-| Get an XSRF token from a document json object.
 The first argument is name the server used to set the XSRF cookie
 e.g. "XSRF-TOKEN="
 
-    token "XSRF-TOKEN=" model.cookies
+    token "XSRF-TOKEN=" model.document
 
 -}
 token : String -> D.Value -> Maybe String
 token name value =
     let
-        -- get cookies from document
+        -- a cookies decoder
         decodeCookie =
             D.field "cookie" D.string
 
