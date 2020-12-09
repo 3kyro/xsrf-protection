@@ -138,6 +138,7 @@ Having a valid token, you can now make some requests
 -}
 
 import Http as Http
+import Json.Decode as D
 
 
 {-| Similar to [Http.request](https://package.elm-lang.org/packages/elm/http/latest/Http#request), but
@@ -260,13 +261,41 @@ e.g. "XSRF-TOKEN="
     token "XSRF-TOKEN=" model.cookies
 
 -}
-token : String -> String -> Maybe String
-token name str =
+token : String -> D.Value -> Maybe String
+token name value =
     let
-        cookies =
+        -- get cookies from document
+        decodeCookie =
+            D.field "cookie" D.string
+
+        -- and decode them
+        rlt =
+            D.decodeValue decodeCookie value
+
+        -- split a cookie string to individual cookies
+        split str =
             String.split ";" str
 
-        filtered =
-            List.filter (String.startsWith name) cookies
+        -- filter those cookies to find the xsrf one
+        filtered lst =
+            List.filter (String.startsWith name) lst
+
+        -- get the head of the filtered list
+        head lst =
+            List.head <| filtered lst
+
+        -- and finally trim the cookie to only the token
+        trimmed a =
+            Maybe.map
+                (String.dropLeft (String.length name))
+            <|
+                head <|
+                    filtered <|
+                        split a
     in
-    Maybe.map (String.dropLeft (String.length name)) <| List.head filtered
+    case rlt of
+        Err err ->
+            Nothing
+
+        Ok cookie ->
+            trimmed cookie
