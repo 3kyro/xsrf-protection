@@ -131,9 +131,9 @@ Now that you have all current cookies in your elm app, you should check if one o
 
 Having a valid token, you can now make some requests
 
-@docs authGet
-@docs authPost
-@docs authRequest
+@docs get
+@docs post
+@docs request
 
 -}
 
@@ -149,7 +149,7 @@ in the headers argument
     -- saves a blog post
     putPost : String -> String -> Cmd msg
     putPost cookies post =
-        XSRF.autRequest
+        XSRF.request
             { method = "PUT"
             , headers = []
             , url = "http://localhost:4000/savePost"
@@ -194,7 +194,7 @@ you also need to provide a XSRF header name and token.
     -- A protected request for an email address
     getEmailRequest : Model -> Cmd Msg
     getEmailRequest model =
-        XSRF.authGet
+        XSRF.get
             { url = "http://localhost:4000/email"
             , expect = Http.expectJson ReceivedEmail D.string
             , xsrfHeaderName = "X-XSRF-TOKEN"
@@ -210,7 +210,7 @@ get :
     }
     -> Cmd msg
 get { url, expect, xsrfHeaderName, xsrfToken } =
-    authRequest
+    request
         { method = "GET"
         , headers = []
         , url = url
@@ -235,7 +235,7 @@ post :
     }
     -> Cmd msg
 post { url, body, expect, xsrfHeaderName, xsrfToken } =
-    authRequest
+    request
         { method = "POST"
         , headers = []
         , url = url
