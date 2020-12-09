@@ -269,4 +269,4 @@ token name str =
         filtered =
             List.filter (String.startsWith name) cookies
     in
-    Maybe.map (String.dropLeft 11) <| List.head filtered
+    Maybe.map (String.dropLeft (String.length name)) <| List.head filtered
