@@ -3,7 +3,7 @@
     "name": "3kyro/xsrf-protection",
     "summary": "Provides XSRF protection and authentication options",
     "license": "BSD-3-Clause",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "exposed-modules": [ "Http.XSRF"],
     "elm-version": "0.19.1 <= v < 0.20.0",
     "dependencies": {
