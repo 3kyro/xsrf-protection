@@ -1,8 +1,8 @@
 module Http.XSRF exposing
     ( token
-    , authGet
-    , authPost
-    , authRequest
+    , get
+    , post
+    , request
     )
 
 {-| This package helps you make [XSRF](https://en.wikipedia.org/wiki/Cross-site_request_forgery) protected HTTP requests.
@@ -141,7 +141,7 @@ import Http as Http
 
 
 {-| Similar to [Http.request](https://package.elm-lang.org/packages/elm/http/latest/Http#request), but
-you need to also provide a XSRF header name and token.
+you also need to provide a XSRF header name and token.
 
 In case you don't want to provide any other header except the XSRF one, you can apply the empty list
 in the headers argument
@@ -162,7 +162,7 @@ in the headers argument
             }
 
 -}
-authRequest :
+request :
     { method : String
     , headers : List Http.Header
     , url : String
@@ -174,7 +174,7 @@ authRequest :
     , tracker : Maybe String
     }
     -> Cmd msg
-authRequest { method, headers, url, body, expect, xsrfHeaderName, xsrfToken, timeout, tracker } =
+request { method, headers, url, body, expect, xsrfHeaderName, xsrfToken, timeout, tracker } =
     Http.request
         { method = method
         , headers =
@@ -189,7 +189,7 @@ authRequest { method, headers, url, body, expect, xsrfHeaderName, xsrfToken, tim
 
 
 {-| Similar to [Http.get](https://package.elm-lang.org/packages/elm/http/latest/Http#get), but
-you need to also provide a XSRF header name and token.
+you also need to provide a XSRF header name and token.
 
     -- A protected request for an email address
     getEmailRequest : Model -> Cmd Msg
@@ -202,14 +202,14 @@ you need to also provide a XSRF header name and token.
             }
 
 -}
-authGet :
+get :
     { url : String
     , expect : Http.Expect msg
     , xsrfHeaderName : String
     , xsrfToken : Maybe String
     }
     -> Cmd msg
-authGet { url, expect, xsrfHeaderName, xsrfToken } =
+get { url, expect, xsrfHeaderName, xsrfToken } =
     authRequest
         { method = "GET"
         , headers = []
@@ -224,9 +224,9 @@ authGet { url, expect, xsrfHeaderName, xsrfToken } =
 
 
 {-| Similar to [Http.post](https://package.elm-lang.org/packages/elm/http/latest/Http#post), but
-you need to also provide a XSRF header name and token.
+you also need to provide a XSRF header name and token.
 -}
-authPost :
+post :
     { url : String
     , body : Http.Body
     , expect : Http.Expect msg
@@ -234,7 +234,7 @@ authPost :
     , xsrfToken : Maybe String
     }
     -> Cmd msg
-authPost { url, body, expect, xsrfHeaderName, xsrfToken } =
+post { url, body, expect, xsrfHeaderName, xsrfToken } =
     authRequest
         { method = "POST"
         , headers = []
