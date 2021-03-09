@@ -3,6 +3,7 @@ module Http.XSRF exposing
     , get
     , post
     , request
+    , put
     )
 
 {-| This package helps you make [XSRF](https://en.wikipedia.org/wiki/Cross-site_request_forgery) protected HTTP requests.
@@ -31,6 +32,7 @@ In Elm , you'll need to retrieve the document JSON Value sent by javascript.
 
     import Json.Decode as D
 
+
     -- main parametrised to D.Value to recieve the document object
     main : Program D.Value Model Msg
     main =
@@ -52,7 +54,9 @@ In Elm , you'll need to retrieve the document JSON Value sent by javascript.
         { document : D.Value }
 
     initModel : D.Value -> Model
-    initModel document = Model document
+    initModel document =
+        Model document
+
 
 # Requests
 
@@ -64,6 +68,7 @@ Having a valid token, you can now make some requests
 
 @docs get
 @docs post
+@docs put
 @docs request
 
 -}
@@ -180,6 +185,30 @@ post { url, body, expect, xsrfHeaderName, xsrfToken } =
         }
 
 
+{-| Create a XSRF-protected PUT request.
+-}
+put :
+    { url : String
+    , body : Http.Body
+    , expect : Http.Expect msg
+    , xsrfHeaderName : String
+    , xsrfToken : Maybe String
+    }
+    -> Cmd msg
+put { url, body, expect, xsrfHeaderName, xsrfToken } =
+    request
+        { method = "PUT"
+        , headers = []
+        , url = url
+        , body = body
+        , expect = expect
+        , xsrfHeaderName = xsrfHeaderName
+        , xsrfToken = xsrfToken
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
 header : String -> Maybe String -> Http.Header
 header headerName cookie =
     Http.header headerName <| Maybe.withDefault "" cookie
@@ -225,7 +254,7 @@ token name value =
                         split a
     in
     case rlt of
-        Err err ->
+        Err _ ->
             Nothing
 
         Ok cookie ->
